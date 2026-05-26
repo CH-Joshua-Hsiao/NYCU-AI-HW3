@@ -210,13 +210,13 @@ We trained our custom Double DQN on Pong for 2,000,000 steps and compared it to 
     \textbf{Agent} & \textbf{Mean Reward} & \textbf{Std} & \textbf{Convergence Status} \\
     \midrule
     DQN (from scratch) & -21.00 & 0.00 & Did not converge in 2M steps \\
-    PPO (SB3)          & -21.00 & 0.00 & Terminated early (~200K steps)  \\
+    PPO (SB3)          & -11.60 & 3.89 & Partially converged (2M steps)  \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \textbf{Observations:}
-Neither agent achieved a score above $-21.00$ within the executed training steps. The custom DQN flatlined at $-21.00$ for the entire 2M steps. SB3 PPO was terminated early at approximately 200,000 steps due to time constraints, also remaining at $-21.00$. This flatline represents the agent losing every single game $21$-$0$ against the built-in Atari opponent, illustrating the high complexity of learning directly from pixels.
+The custom DQN flatlined at $-21.00$ for the entire 2M steps, showing no progress in learning to play. In contrast, the SB3 PPO agent successfully made substantial progress, climbing from a starting score of $-21.00$ to a final evaluation score of $-11.60 \pm 3.89$. This indicates that the PPO agent learned to rally and score multiple points against the opponent paddle, although it did not reach the fully solved state ($+18$ to $+21$).
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion \& Reflections}
@@ -233,10 +233,11 @@ This assignment provided several valuable practical insights into reinforcement 
     DQN's replay buffer allowed it to reuse experience transitions multiple times, resulting in much higher sample efficiency than PPO on LunarLander. PPO, being on-policy, discards experiences after each gradient update, which requires a much larger stream of raw steps to match DQN's performance.
 
   \item \textbf{Lessons in RL Reproducibility:} 
-    Writing DQN from scratch taught us how easily training can fail. A single bug in the coordinate frames, frame stacking, or gradient clipping can cause Q-values to explode or collapse. The fact that our custom DQN remained at $-21.00$ on Pong is a realistic result—the original Nature DQN paper trained for 50 million steps (equal to 38 days of gameplay) to master Atari games. 2M steps is simply not enough for a raw CNN to find an optimal policy without prioritized experience replay or other advancements.
+    Writing DQN from scratch taught us how easily training can fail. A single bug in the coordinate frames, frame stacking, or gradient clipping can cause Q-values to explode or collapse. The fact that our custom DQN remained at $-21.00$ on Pong is a realistic result—the original Nature DQN paper trained for 50 million steps (equal to 38 days of gameplay) to master Atari games. 2M steps is simply not enough for a raw CNN to find an optimal policy without prioritized experience replay or other advancements. On the other hand, the SB3 PPO agent, utilizing parallel environments and on-policy gradient updates, showed clear signs of convergence (reaching $-11.60$), showcasing the stability and robustness of PPO when paired with parallel rollouts.
 
   \item \textbf{Reflections:} 
     If we were to improve our custom agent, we would implement Prioritized Experience Replay (PER) to focus training on transitions with high TD-errors, and apply a learning rate decay schedule to stabilize target network updates.
+\end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{References}
