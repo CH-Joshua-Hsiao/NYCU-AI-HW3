@@ -1,7 +1,7 @@
 % ─────────────────────────────────────────────────────────────────────────────
 % AI Project #3 — Reinforcement Learning with Gymnasium
 % NYCU Spring 2026
-% Student ID: [YOUR_STUDENT_ID]  ← REPLACE THIS
+% Student ID: 413551034
 % ─────────────────────────────────────────────────────────────────────────────
 \documentclass[12pt]{article}
 
@@ -48,10 +48,10 @@
 \begin{document}
 
 % ── Title Header ──────────────────────────────────────────────────────────────
-\title{\vspace{-2cm}\textbf{NYCU Spring 2026 Introduction to AI\\ Homework 3: Reinforcement Learning Report}}
+\title{\vspace{-2cm}\textbf{NYCU AI\\ Homework 3: Reinforcement Learning Report}}
 \author{
-    \textbf{Student Name:} [YOUR_NAME] \qquad \textbf{Student ID:} [YOUR_STUDENT_ID] \\
-    Department of Computer Science, National Yang Ming Chiao Tung University
+    \textbf{Student Name:} Joshua Hsiao \qquad \textbf{Student ID:} 413551034 \\
+    \textbf{Github:} https://github.com/CH-Joshua-Hsiao/NYCU-AI-HW3
 }
 \date{\today}
 
@@ -114,7 +114,7 @@ We implemented a Deep Q-Network agent from scratch in PyTorch, incorporating Dou
 \label{sec:ppo}
 To benchmark against standard implementations, we used Stable-Baselines3's PPO and DQN. 
 PPO \citep{schulman2017proximal} is an on-policy policy gradient method that utilizes a clipped surrogate objective to keep policy updates within a trust region. 
-Our SB3 models use default hyperparameter sets tailored for stability, using parallel environments ($N_{\text{envs}}=8$) for PPO to speed up Atari training on our NVIDIA RTX 3090.
+Our SB3 models use default hyperparameter sets tailored for stability, using parallel environments ($N_{\text{envs}}=16$) for PPO to speed up Atari training on our NVIDIA RTX 3090.
 
 \subsection{Hyperparameter Settings}
 We configured our training parameters to balance learning speed and stability. Table~\ref{tab:hparams} shows the settings used across all experiments.
@@ -137,7 +137,7 @@ We configured our training parameters to balance learning speed and stability. T
     $\varepsilon$-decay steps& 250,000 steps & N/A           & 20\% of total     \\
     Clip Range $\varepsilon_\text{PPO}$ & N/A & 0.1         & 0.2               \\
     Frame Stack Channels    & 4             & 4             & N/A               \\
-    Parallel Environments   & 1             & 8             & 1                 \\
+    Parallel Environments   & 1             & 16            & 1                 \\
     Random Seed             & 42            & 42            & 42                \\
     \bottomrule
   \end{tabular}
@@ -169,14 +169,16 @@ We first compared SB3 PPO and SB3 DQN on LunarLander-v3 for 500,000 steps. Both 
     \toprule
     \textbf{Algorithm} & \textbf{Final Mean Reward} & \textbf{Std} & \textbf{Solved? ($>200$)} \\
     \midrule
-    PPO (SB3)          & 141.89  & 93.05  & No  \\
-    DQN (SB3)          & 236.58  & 49.78  & Yes  \\
+    PPO (SB3)          & 121.03  & 132.76 & No  \\
+    DQN (SB3)          & 217.56  & 79.82  & Yes  \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \textbf{Observations:}
-In LunarLander-v3, DQN easily solved the environment within the 500k budget, reaching a high mean reward of $+236.58$. On the other hand, PPO struggled to cross the Solved threshold, ending at $+141.89$. This indicates that off-policy sample reuse in DQN is highly effective for low-dimensional physical control tasks, whereas PPO's on-policy nature is less sample-efficient and would require more steps or better hyperparameter tuning to converge.
+In our LunarLander-v3 experiments, we observed a distinct difference in training efficiency and behavior between DQN and PPO. In the early stages of training (before 100k steps), both agents performed poorly and crashed the lander frequently. However, as DQN accumulated diverse experiences in its replay buffer, its performance climbed rapidly, successfully solving the environment around 150k steps. Visually, the DQN agent learned to control its descent velocity and land smoothly between the flags. 
+
+On the other hand, the PPO agent was much slower to converge. We observed that PPO tended to hover cautiously or drift sideways to avoid crashing, which resulted in a slower accumulation of rewards, ending at a mean reward of $+121.03$ at 500k steps. This highlights that off-policy sample reuse in DQN is highly efficient for low-dimensional vector inputs, whereas on-policy PPO is less sample-efficient and requires a larger number of environment steps to find the optimal policy under the same training budget.
 
 \subsection{Task 2: Atari Pong — Custom DQN vs. SB3 PPO}
 \label{sec:exp2}
@@ -216,31 +218,35 @@ We trained our custom Double DQN on Pong for 2,000,000 steps and compared it to 
 \end{table}
 
 \textbf{Observations:}
-The custom DQN flatlined at $-21.00$ for the entire 2M steps, showing no progress in learning to play. In contrast, the SB3 PPO agent successfully made substantial progress, climbing from a starting score of $-21.00$ to a final evaluation score of $-11.60 \pm 3.89$. This indicates that the PPO agent learned to rally and score multiple points against the opponent paddle, although it did not reach the fully solved state ($+18$ to $+21$).
+For Atari Pong, we observed a massive difference in behavior. Our custom DQN (from scratch) flatlined at $-21.00$ for the entire 2 million steps. When watching its play style, the DQN agent's paddle barely moved or vibrated randomly at the bottom of the screen, failing to track or return the ball. This is because the state representation ($84\times84\times4$ stacked pixels) is extremely large, and the reward is extremely sparse (only getting $+1$ or $-1$ when a point is scored). With epsilon-greedy exploration, the agent could not hit the ball back by chance often enough to start learning.
+
+In contrast, the SB3 PPO agent successfully broke out of the $-21.00$ valley. Around 500,000 steps, we saw the reward curve start to turn upward. By 2 million steps, it reached a mean reward of $-11.60 \pm 3.89$. The agent learned to track the vertical movement of the ball, position its paddle, and successfully rally and win several points against the Atari computer. Although it did not reach a fully solved state ($+18$ or higher), the upward curve suggests that with more training steps, it would achieve a winning score.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion \& Reflections}
 \label{sec:discussion}
 % ─────────────────────────────────────────────────────────────────────────────
 
-This assignment provided several valuable practical insights into reinforcement learning:
+This assignment provided several valuable practical insights into reinforcement learning, which we discuss below:
 
 \begin{itemize}
   \item \textbf{Continuous State Control vs. Pixel Control:} 
-    LunarLander (8 states) was quickly solved by DQN, demonstrating that low-dimensional vector states are extremely conducive to fast learning. In contrast, Atari Pong (pixel inputs) is orders of magnitude more complex. Training CNN feature extractors from scratch alongside policy learning is slow, unstable, and computationally demanding.
+    LunarLander (8 states) was quickly solved by DQN, demonstrating that low-dimensional vector states (which represent pre-extracted physical quantities like velocity and coordinates) are extremely conducive to fast learning. The neural network only needs to learn a direct mapping from these coordinates to actions. In contrast, Atari Pong (pixel inputs) is orders of magnitude more complex because the agent must solve two tasks simultaneously: it must learn visual feature extraction (finding the ball and paddles in a $84\times84$ pixel grid) and learn policy control (deciding where to move the paddle). Training CNN feature extractors from scratch alongside policy gradient updates is slow, unstable, and computationally demanding.
   
   \item \textbf{Sample Efficiency and Off-Policy Learning:} 
-    DQN's replay buffer allowed it to reuse experience transitions multiple times, resulting in much higher sample efficiency than PPO on LunarLander. PPO, being on-policy, discards experiences after each gradient update, which requires a much larger stream of raw steps to match DQN's performance.
+    DQN's replay buffer allowed it to reuse experience transitions multiple times, resulting in much higher sample efficiency than PPO on LunarLander. In LunarLander, DQN converged in around 150k steps. PPO, being on-policy, discards experiences after each gradient update to ensure the policy updates remain within the trust region. This on-policy constraint requires a much larger stream of raw steps (a higher environmental budget) to find the same optimal behavior.
+    
+  \item \textbf{The Exploration Challenge in Sparse Reward Environments:}
+    In Pong, rewards are extremely sparse: the agent only receives a $+1$ or $-1$ when a rally ends (someone scores). There is no intermediate reward for moving towards the ball or hitting it. In our custom DQN, we relied on epsilon-greedy exploration. Because random actions are highly unlikely to hit the ball back and score a point by chance, the agent rarely experienced a positive reward. This caused it to stay at a flat $-21.00$ score throughout training. In contrast, PPO's actor parallelism allowed it to run 16 environments in parallel, collecting diverse rollouts. This parallel exploration significantly increased the probability of experiencing successful trajectories, helping the policy climb out of the flat $-21.00$ zone and learn to play.
 
   \item \textbf{Lessons in RL Reproducibility:} 
     Writing DQN from scratch taught us how easily training can fail. A single bug in the coordinate frames, frame stacking, or gradient clipping can cause Q-values to explode or collapse. The fact that our custom DQN remained at $-21.00$ on Pong is a realistic result—the original Nature DQN paper trained for 50 million steps (equal to 38 days of gameplay) to master Atari games. 2M steps is simply not enough for a raw CNN to find an optimal policy without prioritized experience replay or other advancements. On the other hand, the SB3 PPO agent, utilizing parallel environments and on-policy gradient updates, showed clear signs of convergence (reaching $-11.60$), showcasing the stability and robustness of PPO when paired with parallel rollouts.
 
-  \item \textbf{Reflections:} 
-    If we were to improve our custom agent, we would implement Prioritized Experience Replay (PER) to focus training on transitions with high TD-errors, and apply a learning rate decay schedule to stabilize target network updates.
+  \item \textbf{Reflections & Future Work:} 
+    If we were to improve our custom agent, we would implement Prioritized Experience Replay (PER) to focus training on transitions with high TD-errors, and apply a learning rate decay schedule to stabilize target network updates. We would also implement Reward Shaping (e.g., giving a small positive reward when the paddle makes contact with the ball) to mitigate the sparse reward problem.
 \end{itemize}
 
-% ─────────────────────────────────────────────────────────────────────────────
-\section*{References}
+
 % ─────────────────────────────────────────────────────────────────────────────
 \bibliographystyle{plainnat}
 \bibliography{references}
