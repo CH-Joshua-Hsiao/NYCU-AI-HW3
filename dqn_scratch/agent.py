@@ -84,7 +84,9 @@ class DQNAgent:
 
     def load(self, path):
         checkpoint = torch.load(path, map_location=self.device)
-        self.policy_net.load_state_dict(checkpoint['policy_net'])
+        policy_key = 'online_net' if 'online_net' in checkpoint else 'policy_net'
+        step_key = 'steps_done' if 'steps_done' in checkpoint else 'global_step'
+        self.policy_net.load_state_dict(checkpoint[policy_key])
         self.target_net.load_state_dict(checkpoint['target_net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
-        self.global_step = checkpoint['global_step']
+        self.global_step = checkpoint[step_key]
